@@ -184,7 +184,7 @@ module async_fifo #(
     async_fifo_mem #(
         .DATA_WIDTH     (DATA_WIDTH),
         .DEPTH          (DEPTH),
-        .FTW_ENABLE      (FWFT_ENABLE)
+        .FTWT_ENABLE      (FWFT_ENABLE)
     ) u_async_fifo_mem (
         .wr_clk     (wr_clk),
         .wr_en      (mem_wr_en),
