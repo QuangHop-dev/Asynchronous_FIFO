@@ -70,7 +70,7 @@ module async_fifo #(
         return (value >> 1) ^ value;
     endfunction
 
-`ifdef SYNTHESIS
+`ifndef SYNTHESIS
     initial begin : p_check_parameters
         if (DATA_WIDTH == 0) begin
             $fatal(1, "async_fifo: DATA_WIDTH must be > 0");
