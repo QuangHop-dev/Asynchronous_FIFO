@@ -1,13 +1,13 @@
-`default_nettype none
+`default_nettype none                                               // Do not automatically create wire if I type an undeclared signal name
 
 module async_fifo #(
-    parameter int unsigned DATA_WIDTH               = 32,
-    parameter int unsigned DEPTH                    = 16,
-    parameter int unsigned SYNC_STAGES              = 2,
-    parameter int unsigned ALMOST_FULL_THRESHOLD    = DEPTH - 1,
-    parameter int unsigned ALMOST_EMPTY_THRESHOLD   = 1,
-    parameter bit          FWFT_ENABLE              = 1'b0,
-    parameter bit          SAFE_RESET_ENABLE        = 1'b1,
+    parameter int unsigned DATA_WIDTH               = 32,           // Width of the data bus
+    parameter int unsigned DEPTH                    = 16,           // Depth of the FIFO (must be a power of 2)
+    parameter int unsigned SYNC_STAGES              = 2,            // Number of synchronizer stages for crossing clock domains
+    parameter int unsigned ALMOST_FULL_THRESHOLD    = DEPTH - 1,    // Threshold for almost full flag (must be <= DEPTH)
+    parameter int unsigned ALMOST_EMPTY_THRESHOLD   = 1,            
+    parameter bit          FWFT_ENABLE              = 1'b0,         // Enable First-Word-Fall-Through mode (1 = FWFT, 0 = standard)
+    parameter bit          SAFE_RESET_ENABLE        = 1'b1,         // Enable safe reset (1 = safe reset, 0 = unsafe reset)
     localparam int unsigned ADDR_WIDTH               = $clog2(DEPTH),
     localparam int unsigned PTR_WIDTH                = ADDR_WIDTH + 1,
     localparam int unsigned LEVEL_WIDTH              = $clog2(DEPTH+1)
@@ -17,8 +17,8 @@ module async_fifo #(
     input  wire logic                   wr_en,
     input  wire logic [DATA_WIDTH-1:0]  wr_data,
     //---
-    output logic                        wr_full,
-    output logic                        wr_almost_full,
+    output logic                        wr_full,                    //
+    output logic                        wr_almost_full,             // Asserted when the FIFO is almost full (apply for )
     output logic      [LEVEL_WIDTH-1:0] wr_level,
     output logic                        wr_overflow,
 
