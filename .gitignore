@@ -1,0 +1,25 @@
+# Simulation
+work/
+transcript
+modelsim.ini
+*.wlf
+*.vcd
+*.fst
+
+# Coverage
+*.ucdb
+coverage/
+
+# Build and temporary files
+build/
+tmp/
+logs/
+
+# Tool databases
+*.db
+.qverify/
+
+# Editor / OS
+.vscode/
+.DS_Store
+Thumbs.db
