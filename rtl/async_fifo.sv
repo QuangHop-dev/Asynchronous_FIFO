@@ -17,56 +17,56 @@ module async_fifo #(
     input  wire logic                   wr_en,
     input  wire logic [DATA_WIDTH-1:0]  wr_data,
     //---
-    output logic                        wr_full,                    //
-    output logic                        wr_almost_full,             // Asserted when the FIFO is almost full (apply for )
-    output logic      [LEVEL_WIDTH-1:0] wr_level,
-    output logic                        wr_overflow,
+    output logic                        wr_full,                    
+    output logic                        wr_almost_full,             // Asserted when the FIFO is almost full
+    output logic      [LEVEL_WIDTH-1:0] wr_level,                   // Number of words in the FIFO
+    output logic                        wr_overflow,                // Asserted when a write is attempted while the FIFO is full
 
     input  wire logic                   rd_clk,
     input  wire logic                   rd_rst_n,
     input  wire logic                   rd_en,
     //---
     output logic      [DATA_WIDTH-1:0]  rd_data,
-    output logic                        rd_valid,
-    output logic                        rd_empty,
-    output logic                        rd_almost_empty,
-    output logic      [LEVEL_WIDTH-1:0] rd_level,
-    output logic                        rd_underflow
+    output logic                        rd_valid,                   // Asserted when the FIFO has valid data to read
+    output logic                        rd_empty,                   
+    output logic                        rd_almost_empty,            // Asserted when the FIFO is almost empty 
+    output logic      [LEVEL_WIDTH-1:0] rd_level,                   
+    output logic                        rd_underflow                // Asserted when a read is attempted while the FIFO is empty
 );
-    import async_fifo_pkg::is_power_of_two;
+    import async_fifo_pkg::is_power_of_two;                         // Import the is_power_of_two function from the async_fifo_pkg package
 
-    localparam logic [PTR_WIDTH-1:0] FULL_COMPARE_MASK = {2'b11, {(PTR_WIDTH-2){1'b0}}};
+    localparam logic [PTR_WIDTH-1:0] FULL_COMPARE_MASK = {2'b11, {(PTR_WIDTH-2){1'b0}}}; // Mask used to compare write and read pointers for full condition
 
-    logic wr_domain_rst_n;
-    logic rd_domain_rst_n;
-    logic wr_active;
-    logic rd_active;
+    logic wr_domain_rst_n;                                          // Reset signal synchronized to the write clock domain
+    logic rd_domain_rst_n;                                          // Reset signal synchronized to the read clock domain
+    logic wr_active;                                                // Indicates if the write clock domain is active (not in reset)
+    logic rd_active;                                        // Indicates if the read clock domain is active (not in reset)  
 
-    logic [PTR_WIDTH-1:0] wr_bin_q;
+    logic [PTR_WIDTH-1:0] wr_bin_q;                                 // Current write pointer in binary format
     logic [PTR_WIDTH-1:0] wr_bin_next;
-    logic [PTR_WIDTH-1:0] wr_gray_q;
-    logic [PTR_WIDTH-1:0] wr_gray_next;
+    logic [PTR_WIDTH-1:0] wr_gray_q;                                // Current write pointer in Gray code format
+    logic [PTR_WIDTH-1:0] wr_gray_next; 
     logic [PTR_WIDTH-1:0] rd_bin_q;
     logic [PTR_WIDTH-1:0] rd_bin_next;
     logic [PTR_WIDTH-1:0] rd_gray_q;
     logic [PTR_WIDTH-1:0] rd_gray_next;
-    logic [PTR_WIDTH-1:0] rd_gray_wr_sync;
+    logic [PTR_WIDTH-1:0] rd_gray_wr_sync;                          // Read pointer synchronized to the write clock domain (in Gray code)
     logic [PTR_WIDTH-1:0] wr_gray_rd_sync;
-    logic [PTR_WIDTH-1:0] rd_bin_wr_sync;
+    logic [PTR_WIDTH-1:0] rd_bin_wr_sync;                           // Read pointer synchronized to the write clock domain (in binary format)
     logic [PTR_WIDTH-1:0] wr_bin_rd_sync;
 
     logic wr_full_q;
     logic wr_full_next;
     logic rd_empty_q;
     logic rd_empty_next;
-    logic rd_valid_q;
-    logic wr_fire;
+    logic rd_valid_q;                                               // Indicates if the read data is valid (used in standard mode)
+    logic wr_fire;                                                  // Indicates a write operation is occurring (write enable and not full)
     logic rd_fire;
-    logic mem_wr_en;
-    logic [LEVEL_WIDTH-1:0] wr_level_calc;
+    logic mem_wr_en;                                                // Indicates a write operation to the FIFO memory is occurring (write enable and not full)
+    logic [LEVEL_WIDTH-1:0] wr_level_calc;                          // Calculated number of words in the FIFO from the write clock domain perspective
     logic [LEVEL_WIDTH-1:0] rd_level_calc;
 
-    function automatic logic [PTR_WIDTH-1:0] bin_to_gray(input logic [PTR_WIDTH-1:0] value);
+    function automatic logic [PTR_WIDTH-1:0] bin_to_gray(input logic [PTR_WIDTH-1:0] value); // Convert binary to Gray code
         return (value >> 1) ^ value;
     endfunction
 
@@ -127,18 +127,18 @@ module async_fifo #(
         .gray_sync  (wr_gray_rd_sync)
     );
 
-    assign wr_fire = wr_en && !wr_full_q && wr_active;
+    assign wr_fire = wr_en && !wr_full_q && wr_active;                  // Write operation occurs when write enable is asserted, FIFO is not full, and write clock domain is active
     assign rd_fire = rd_en && !rd_empty_q && rd_active;
-    assign mem_wr_en = wr_fire;
+    assign mem_wr_en = wr_fire;                                         // Memory write enable is asserted when a write operation occurs
 
-    always_comb begin
+    always_comb begin                                                   
         wr_bin_next = wr_bin_q;
         if (wr_fire) begin
-            wr_bin_next = wr_bin_q + {{(PTR_WIDTH-1){1'b0}}, 1'b1};
+            wr_bin_next = wr_bin_q + {{(PTR_WIDTH-1){1'b0}}, 1'b1};      
         end
         wr_gray_next = bin_to_gray(wr_bin_next);
-
-        wr_full_next = (wr_gray_next == (rd_gray_wr_sync ^ FULL_COMPARE_MASK));
+        // Check for full condition by comparing the next write pointer in Gray code with the synchronized read pointer in Gray code, applying the FULL_COMPARE_MASK to account for the FIFO depth
+        wr_full_next = (wr_gray_next == (rd_gray_wr_sync ^ FULL_COMPARE_MASK)); 
     end
 
     always_comb begin
@@ -147,7 +147,7 @@ module async_fifo #(
             rd_bin_next = rd_bin_q + {{(PTR_WIDTH-1){1'b0}}, 1'b1};
         end
         rd_gray_next = bin_to_gray(rd_bin_next);
-
+        // Check for empty condition by comparing the next read pointer in Gray code with the synchronized write pointer in Gray code
         rd_empty_next = (rd_gray_next == wr_gray_rd_sync);
     end
 
@@ -214,7 +214,7 @@ module async_fifo #(
     assign wr_almost_full   = !wr_active || (wr_level_calc >= ALMOST_FULL_THRESHOLD);
     assign rd_almost_empty  = !rd_active || (rd_level_calc <= ALMOST_EMPTY_THRESHOLD);
 
-    generate
+    generate                                                                // Generate valid signal logic based on FWFT enable
         if (FWFT_ENABLE) begin : g_fwft_valid
             assign rd_valid = !rd_empty_q && rd_active;
         end else begin : g_standard_valid
